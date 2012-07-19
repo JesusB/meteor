@@ -37,6 +37,7 @@
       var user = Meteor.users.findOne(selector);
       if (!user)
         throw new Meteor.Error("user not found");
+
       if (!user.services || !user.services.password ||
           !user.services.password.srp)
         throw new Meteor.Error("user has no password set");
@@ -104,7 +105,9 @@
 
     // XXX use updateOrCreateUser
 
-    var user = {username: username, services: {password: {srp: options.newUser.verifier}}};
+    var user = {username: username,
+                emails: options.newUser.email ? [options.newUser.email] : [],
+                services: {password: {srp: options.newUser.verifier}}};
     var userId = Meteor.users.insert(user);
 
     var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});

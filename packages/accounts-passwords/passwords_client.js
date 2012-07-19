@@ -2,11 +2,11 @@
 
   // XXX options to add to new user
   // XXX callback
-  Meteor.loginNewUser = function (username, password, callback) {
+  Meteor.loginNewUser = function (username, email, password, callback) {
     var verifier = Meteor._srp.generateVerifier(password);
 
     Meteor.apply('login', [
-      {newUser: {username: username, verifier: verifier}}
+      {newUser: {username: username, email: email, verifier: verifier}}
     ], {wait: true}, function (error, result) {
       if (error || !result) {
         error = error || new Error("No result");
@@ -15,7 +15,7 @@
       }
 
       Meteor.accounts.makeClientLoggedIn(result.id, result.token);
-      callback && callback(null, {message: 'Success'});
+      callback && callback(undefined, {message: 'Success'});
     });
 
   };
@@ -36,6 +36,7 @@
         selector = {username: selector};
       else
         selector = {email: selector};
+
     request.user = selector;
 
     Meteor.apply('beginPasswordExchange', [request], function (error, result) {
