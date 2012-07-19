@@ -23,12 +23,14 @@
       // because it's dependant on how long method call chains are in
       // other tests
       var quiesceCallback = expect(function () {
+        console.log('xcxc', Meteor.user());
         test.equal(Meteor.user().username, username);
       });
-      Meteor.loginNewUser(username, email, password, expect(function (error) {
-        test.equal(error, undefined);
-        Meteor.default_connection.onQuiesce(quiesceCallback);
-      }));
+      Meteor.createUser({username: username, email: email, password: password},
+                        expect(function (error) {
+                          test.equal(error, undefined);
+                          Meteor.default_connection.onQuiesce(quiesceCallback);
+                        }));
     },
     logoutStep,
     function (test, expect) {

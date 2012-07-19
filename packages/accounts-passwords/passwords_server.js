@@ -131,10 +131,10 @@
       // xcxc support just receiving password
       // xcxc support email and no username, or both
       // xcxc if email, email -> emails in object
-      var user = {username: username, services: {srp: options.srp}};
+      var user = {username: username, services: {password: {srp: options.srp}}};
 
       if (options.email)
-        user.email = options.email;
+        user.emails = [options.email];
 
       if (onCreateUserHook) {
         user = onCreateUserHook(options, extra, user);
@@ -145,6 +145,7 @@
       // xcxc use updateOrCreateUser
       var userId = Meteor.users.insert(user);
       var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});
+      this.setUserId(userId);
       return {token: loginToken, id: userId};
     }
   });
@@ -172,7 +173,6 @@
 
     return {token: loginToken, id: userId, HAMK: serialized.HAMK};
   });
-
 
   // handler to login with plaintext password.
   //
@@ -207,35 +207,5 @@
     var loginToken = Meteor.accounts._loginTokens.insert({userId: user._id});
     return {token: loginToken, id: user._id};
   });
-
-
-
-  // handler to login with a new user
-  Meteor.accounts.registerLoginHandler(function (options) {
-    if (!options.newUser)
-      return undefined; // don't handle
-
-    if (!options.newUser.username)
-      throw new Meteor.Error("need to set a username");
-    var username = options.newUser.username;
-
-    if (Meteor.users.findOne({username: username}))
-      throw new Meteor.Error("user already exists");
-
-    // XXX validate verifier
-
-    // XXX use updateOrCreateUser
-
-    var user = {username: username,
-                emails: options.newUser.email ? [options.newUser.email] : [],
-                services: {password: {srp: options.newUser.verifier}}};
-    var userId = Meteor.users.insert(user);
-
-    var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});
-
-    return {token: loginToken, id: userId};
-  });
-
-
 
 })();

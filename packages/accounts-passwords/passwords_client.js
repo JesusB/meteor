@@ -1,16 +1,16 @@
 (function () {
 
   Meteor.createUser = function (options, extra, callback) {
-    if (typeof opt_extra === "function") {
+    if (typeof extra === "function") {
       callback = extra;
       extra = {};
     }
 
-    var srp = new Meteor._XXX_client(options.username, options.password);
-    var verifier = srp.create();
+    var verifier = Meteor._srp.generateVerifier(options.password, {identity: options.username});
 
-    Meteor.apply('login', [
-      {newUser: {username: username, email: email, verifier: verifier}}
+    // xcxc what if we don't pass an email? or don't pass username?
+    Meteor.apply('createUser', [
+      {username: options.username, email: options.email, srp: verifier}
     ], {wait: true}, function (error, result) {
       if (error || !result) {
         error = error || new Error("No result");
