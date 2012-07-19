@@ -1,11 +1,5 @@
 (function () {
 
-<<<<<<< Updated upstream
-  // XXX options to add to new user
-  // XXX callback
-  Meteor.loginNewUser = function (username, email, password, callback) {
-    var verifier = Meteor._srp.generateVerifier(password);
-=======
   Meteor.createUser = function (options, extra, callback) {
     if (typeof opt_extra === "function") {
       callback = extra;
@@ -14,7 +8,6 @@
 
     var srp = new Meteor._XXX_client(options.username, options.password);
     var verifier = srp.create();
->>>>>>> Stashed changes
 
     Meteor.apply('login', [
       {newUser: {username: username, email: email, verifier: verifier}}
