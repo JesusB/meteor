@@ -26,6 +26,19 @@
     return selector;
   };
 
+  // onCreateUser hook
+  var onCreateUserHook = null;
+  Meteor.accounts.onCreateUser = function (func) {
+    if (onCreateUserHook)
+      throw new Meteor.Error("Can only call onCreateUser once");
+    else
+      onCreateUserHook = func;
+  };
+
+
+  Meteor.accounts.onCreateUser = function (func) {
+    // xcxc
+  };
 
   Meteor.methods({
     // @param request {Object} with fields:
@@ -66,6 +79,7 @@
 
       return challenge;
     },
+
     changePassword: function (options) {
       if (!this.userId())
         throw new Meteor.Error("must be logged in");
@@ -103,6 +117,35 @@
       if (serialized)
         ret.HAMK = serialized.HAMK;
       return ret;
+
+    createUser: function (options, extra) {
+      var username = options.username;
+      if (!username)
+        throw new Meteor.Error("need to set a username");
+
+      if (Meteor.users.findOne({username: username}))
+        throw new Meteor.Error("user already exists");
+
+      // XXX validate verifier
+
+      // xcxc support just receiving password
+      // xcxc support email and no username, or both
+      // xcxc if email, email -> emails in object
+      var user = {username: username, services: {srp: options.srp}};
+
+      if (options.email)
+        user.email = options.email;
+
+      if (onCreateUserHook) {
+        user = onCreateUserHook(options, extra, user);
+      } else {
+        _.extend(user, extra); // xcxc private fields?
+      }
+
+      // xcxc use updateOrCreateUser
+      var userId = Meteor.users.insert(user);
+      var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});
+      return {token: loginToken, id: userId};
     }
   });
 
