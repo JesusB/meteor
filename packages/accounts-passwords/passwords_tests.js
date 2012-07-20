@@ -58,6 +58,31 @@
         test.equal(Meteor.user().username, username);
       }));
     },
+    logoutStep,
+    // plain text password. no API for this, have to send a raw message.
+    function (test, expect) {
+      Meteor.call(
+        // wrong password
+        'login', {user: {email: email}, password: password2},
+        expect(function (error, result) {
+          test.isTrue(error);
+          test.isFalse(result);
+          test.isFalse(Meteor.user());
+      }));
+    },
+    function (test, expect) {
+      Meteor.call(
+        // right password
+        'login', {user: {email: email}, password: password},
+        expect(function (error, result) {
+          test.equal(error, undefined);
+          test.isTrue(result.id);
+          test.isTrue(result.token);
+          // emulate the real login behavior, so as not to confuse test.
+          Meteor.accounts.makeClientLoggedIn(result.id, result.token);
+          test.equal(Meteor.user().username, username);
+      }));
+    },
     // change password
     function (test, expect) {
       Meteor.changePassword(password, password2, expect(function (error) {

@@ -7,6 +7,23 @@
     null /*driver*/,
     true /*preventAutopublish*/);
 
+  var selectorFromUserQuery = function (user) {
+    if (!user)
+      throw new Meteor.Error("Must pass a user property in request");
+
+    var selector;
+    if (user.id)
+      selector = {_id: user.id};
+    else if (user.username)
+      selector = {username: user.username};
+    else if (user.email)
+      selector = {emails: user.email};
+    else
+      throw new Meteor.Error("Must pass username, email, or id in request.user");
+
+    return selector;
+  };
+
 
   Meteor.methods({
     // @param request {Object} with fields:
@@ -17,22 +34,7 @@
     //   salt: string uuid
     //   B: hex encoded int. server's public key for this exchange
     beginPasswordExchange: function (request) {
-      if (!request.user)
-        throw new Meteor.Error("Must pass a user property in request");
-
-      var id = request.user.id;
-      var username = request.user.username;
-      var email = request.user.email;
-
-      var selector;
-      if (id)
-        selector = {_id: id};
-      else if (username)
-        selector = {username: username};
-      else if (email)
-        selector = {emails: email};
-      else
-        throw new Meteor.Error("Must pass username, email, or id in request.user");
+      var selector = selectorFromUserQuery(request.user);
 
       var user = Meteor.users.findOne(selector);
       if (!user)
@@ -125,6 +127,42 @@
 
     return {token: loginToken, id: userId, HAMK: serialized.HAMK};
   });
+
+
+  // handler to login with plaintext password.
+  //
+  // The meteor client doesn't use this, it is for other DDP clients who
+  // haven't implemented SRP. Since it sends the password in plaintext
+  // over the wire, it should only be run over SSL!
+  //
+  // Also, it might be nice if servers could turn this off. Or maybe it
+  // should be opt-in, not opt-out? Meteor.accounts.config option?
+  Meteor.accounts.registerLoginHandler(function (options) {
+    if (!options.password || !options.user)
+      return undefined; // don't handle
+
+    var selector = selectorFromUserQuery(options.user);
+    var user = Meteor.users.findOne(selector);
+    if (!user)
+      throw new Meteor.Error("user not found");
+
+    if (!user.services || !user.services.password ||
+        !user.services.password.srp)
+      throw new Meteor.Error("user has no password set");
+
+    // Just check the verifier output when the same identity and salt
+    // are passed. Don't bother with a full exchange.
+    var verifier = user.services.password.srp;
+    var newVerifier = Meteor._srp.generateVerifier(options.password, {
+      identity: verifier.identity, salt: verifier.salt});
+
+    if (verifier.verifier !== newVerifier.verifier)
+      throw new Meteor.Error("bad password");
+
+    var loginToken = Meteor.accounts._loginTokens.insert({userId: user._id});
+    return {token: loginToken, id: user._id};
+  });
+
 
 
   // handler to login with a new user
