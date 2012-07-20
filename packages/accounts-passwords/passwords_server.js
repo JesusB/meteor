@@ -10,6 +10,8 @@
   var selectorFromUserQuery = function (user) {
     if (!user)
       throw new Meteor.Error("Must pass a user property in request");
+    if (_.keys(user).length !== 1)
+      throw new Meteor.Error("User property must have exactly one field");
 
     var selector;
     if (user.id)
