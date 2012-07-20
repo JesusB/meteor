@@ -138,12 +138,12 @@
 
       if (onCreateUserHook) {
         user = onCreateUserHook(options, extra, user);
-      } else {
-        _.extend(user, extra); // xcxc private fields?
+        // xcxc we need to get extra out of this, or alternative
+        // change the signature of updateOrCreateUser to just get one
+        // user object
       }
 
-      // xcxc use updateOrCreateUser
-      var userId = Meteor.users.insert(user);
+      var userId = Meteor.accounts.updateOrCreateUser(user, extra);
       var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});
       this.setUserId(userId);
       return {token: loginToken, id: userId};

@@ -23,7 +23,6 @@
       // because it's dependant on how long method call chains are in
       // other tests
       var quiesceCallback = expect(function () {
-        console.log('xcxc', Meteor.user());
         test.equal(Meteor.user().username, username);
       });
       Meteor.createUser({username: username, email: email, password: password},

@@ -91,6 +91,7 @@
   Meteor.accounts.updateOrCreateUser = function(options, extra) {
     var updateUserData = function() {
       // don't overwrite existing fields
+      // xcxc do we need to guard writing to private fields? (services, private, username, email)
       var newKeys = _.without(_.keys(userData), _.keys(user));
       var newAttrs = _.pick(userData, newKeys);
       Meteor.users.update(user, {$set: newAttrs});
