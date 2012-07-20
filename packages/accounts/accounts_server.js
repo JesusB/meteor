@@ -88,11 +88,7 @@
   //   specific service subobject
   // @returns {String} userId
   // xcxc change signature to use options, as defined in hackpad
-  Meteor.accounts.updateOrCreateUser = function(email,
-                                                userData,
-                                                serviceName,
-                                                serviceUserId,
-                                                serviceData) {
+  Meteor.accounts.updateOrCreateUser = function(options, extra) {
     var updateUserData = function() {
       // don't overwrite existing fields
       var newKeys = _.without(_.keys(userData), _.keys(user));
@@ -100,6 +96,24 @@
       Meteor.users.update(user, {$set: newAttrs});
     };
 
+    // xcxc rethink the need for all of these:
+    var email = options.email;
+    var userData = extra || {};
+
+    if (_.keys(options.services).length > 0) {
+      if (_.keys(options.services).length > 1) {
+        // xcxc test this
+        throw new Error("Can't pass more than one service to updateOrCreateUser");
+      }
+      var serviceName = _.keys(options.services)[0];
+      var serviceUserId = options.services[serviceName].id;
+      delete options.services[serviceName].id;
+      var serviceData = options.services[serviceName];
+    }
+    // xcxc </rethink>
+
+    // xcxc think about matching by username as well. read package
+    // options?
     var userByEmail = email && Meteor.users.findOne({emails: email});
     var user;
     if (userByEmail) {
@@ -107,7 +121,7 @@
       // If we know about this email address that is our user.
       // Update the information from this service.
       user = userByEmail;
-      if (!user.services || !user.services[serviceName]) {
+      if (options.services && (!user.services || !user.services[serviceName])) {
         var attrs = {};
         attrs["services." + serviceName] = _.extend(
           {id: serviceUserId}, serviceData);
@@ -116,7 +130,7 @@
 
       updateUserData();
       return user._id;
-    } else {
+    } else if (options.services) {
 
       // If not, look for a user with the appropriate service user id.
       // Update the user's email.

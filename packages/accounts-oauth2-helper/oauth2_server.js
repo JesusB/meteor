@@ -72,9 +72,14 @@
     var userInfo = service.handleOauthRequest(req.query);
 
     if (userInfo) { // could be null if user declined permissions
-      var userId = Meteor.accounts.updateOrCreateUser(
-        userInfo.email, userInfo.userData, serviceName,
-        userInfo.serviceUserId, userInfo.serviceData);
+      // xcxc clean this code by changing the signature of handleOauthRequest
+      var options = {services: {}};
+      options.services[serviceName] = _.extend(
+        {id: userInfo.serviceUserId},
+        userInfo.serviceData);
+      if (userInfo.email)
+        options.email = userInfo.email;
+      var userId = Meteor.accounts.updateOrCreateUser(options, userInfo.userData);
 
       // Generate and store a login token for reconnect
       // XXX this could go in accounts_server.js instead
