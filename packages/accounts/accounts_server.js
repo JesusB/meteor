@@ -79,15 +79,12 @@
 
   // Updates or creates a user after we authenticate with a 3rd party
   //
-  // @param email {String|null} The user's email, or null if the service
-  //   doesn't provide one
-  // @param userData {Object} attributes to store directly on the user object
-  // @param serviceName {String} e.g. 'facebook' or 'google'
-  // @param serviceUserId {?} user id in 3rd party service
-  // @param serviceData {Object} attributes to store on the user record's
-  //   specific service subobject
+  // @param options {Object}
+  //   - username (optional)
+  //   - email (optional)
+  //   - services {Object} e.g. {facebook: {id: (facebook user id), ...}}
+  // @param extra {Object, optional} Any additional fields to place on the user objet
   // @returns {String} userId
-  // xcxc change signature to use options, as defined in hackpad
   Meteor.accounts.updateOrCreateUser = function(options, extra) {
     var updateUserData = function() {
       // don't overwrite existing fields

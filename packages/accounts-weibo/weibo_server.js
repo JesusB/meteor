@@ -19,9 +19,12 @@
     var identity = getIdentity(result.access_token, parseInt(result.uid, 10));
 
     return {
-      userData: {name: identity.name, screen_name: identity.screen_name},
-      serviceUserId: result.uid,
-      serviceData: {accessToken: result.access_token}
+      options: {
+        services: {weibo: {id: result.uid, accessToken: result.accessToken}}
+      },
+      // xcxc should this be screenName? username? what is this?
+      // xcxc originally called "screen_name" - should we announce the breaking change?
+      extra: {screenName: identity.screen_name}
     };
   });
 
