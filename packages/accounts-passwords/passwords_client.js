@@ -66,4 +66,55 @@
       });
     });
   };
+
+
+  // @param oldPassword {String|null}
+  // @param newPassword {String}
+  // @param callback {Function(error|undefined)}
+  Meteor.changePassword = function (oldPassword, newPassword, callback) {
+    if (!Meteor.user()) {
+      callback && callback(new Error("Must be logged in to change password."));
+      return;
+    }
+
+    var verifier = Meteor._srp.generateVerifier(newPassword);
+
+    if (!oldPassword) {
+      Meteor.apply('changePassword', [{srp: verifier}], function (error, result) {
+        if (error || !result) {
+          callback && callback(
+            error || new Error("No result from changePassword."));
+        } else {
+          callback();
+        }
+      });
+    } else { // oldPassword
+      var srp = new Meteor._srp.Client(oldPassword);
+      var request = srp.startExchange();
+      request.user = {id: Meteor.user()._id};
+      Meteor.apply('beginPasswordExchange', [request], function (error, result) {
+        if (error || !result) {
+          callback && callback(
+            error || new Error("No result from call to beginPasswordExchange"));
+          return;
+        }
+
+        var response = srp.respondToChallenge(result);
+        response.srp = verifier;
+        Meteor.apply('changePassword', [response], function (error, result) {
+          if (error || !result) {
+            callback && callback(
+              error || new Error("No result from changePassword."));
+          } else {
+            if (!srp.verifyConfirmation(result)) {
+              // Monkey business!
+              callback(new Error("Old password verification failed."));
+            } else {
+              callback();
+            }
+          }
+        });
+      });
+    }
+  };
 })();

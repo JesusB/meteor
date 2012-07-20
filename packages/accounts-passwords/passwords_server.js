@@ -10,7 +10,7 @@
 
   Meteor.methods({
     // @param request {Object} with fields:
-    //   user: either {username: (username)} or {email: (email)}
+    //   user: either {username: (username)}, {email: (email)}, or {id: (userId)}
     //   A: hex encoded int. the client's public key for this exchange
     // @returns {Object} with fields:
     //   identiy: string uuid
@@ -20,19 +20,19 @@
       if (!request.user)
         throw new Meteor.Error("Must pass a user property in request");
 
+      var id = request.user.id;
       var username = request.user.username;
       var email = request.user.email;
 
-      if (!username && !email)
-        throw new Meteor.Error("Must pass either username or email in request.user");
-      if (username && email)
-        throw new Meteor.Error("Can't pass both username and email in request.user");
-
       var selector;
-      if (username)
+      if (id)
+        selector = {_id: id};
+      else if (username)
         selector = {username: username};
-      else /* if (email) */
+      else if (email)
         selector = {emails: email};
+      else
+        throw new Meteor.Error("Must pass username, email, or id in request.user");
 
       var user = Meteor.users.findOne(selector);
       if (!user)
@@ -61,6 +61,44 @@
       Meteor.accounts._srpChallenges.insert(serialized);
 
       return challenge;
+    },
+    changePassword: function (options) {
+      if (!this.userId())
+        throw new Meteor.Error("must be logged in");
+
+      // If options.M is set, it means we went through a challenge with
+      // the old password.
+
+      // XXX && Meteor.accounts.config.unsafePasswordChanges check here!
+      if (!options.M) {
+        throw new Meteor.Error("XXX no oldPassword unimplemented");
+      }
+
+      if (options.M) {
+        var serialized = Meteor.accounts._srpChallenges.findOne(
+          {M: options.M});
+        if (!serialized)
+          throw new Meteor.Error("bad password");
+        if (serialized.userId !== this.userId())
+          // No monkey business!
+          throw new Meteor.Error("bad password");
+      }
+
+      var verifier = options.srp;
+      if (!verifier && options.password) {
+        verifier = Meteor._srp.generateVerifier(options.password);
+      }
+      if (!verifier || !verifier.identity || !verifier.salt ||
+          !verifier.verifier)
+        throw new Meteor.Error("Invalid verifier");
+
+      Meteor.users.update({_id: this.userId()},
+                          {$set: {'services.password.srp': verifier}});
+
+      var ret = {passwordChanged: true};
+      if (serialized)
+        ret.HAMK = serialized.HAMK;
+      return ret;
     }
   });
 

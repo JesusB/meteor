@@ -6,6 +6,8 @@
   var username = Meteor.uuid();
   var email = Meteor.uuid() + '@example.com';
   var password = 'password';
+  var password2 = 'password2';
+  var password3 = 'password3';
 
   var logoutStep = function (test, expect) {
     Meteor.logout(expect(function (error) {
@@ -14,7 +16,7 @@
     }));
   };
 
-  testAsyncMulti("passwords - create user and login via username and email", [
+  testAsyncMulti("passwords - long series", [
     function (test, expect) {
       // XXX argh quiescence + tests === wtf. and i have no idea why
       // this was necessary here and not in other places. probably
@@ -56,6 +58,41 @@
         test.equal(Meteor.user().username, username);
       }));
     },
+    // change password
+    function (test, expect) {
+      Meteor.changePassword(password, password2, expect(function (error) {
+        test.equal(error, undefined);
+        test.equal(Meteor.user().username, username);
+      }));
+    },
+    logoutStep,
+    // old password, failed login
+    function (test, expect) {
+      Meteor.loginWithPassword(email, password, expect(function (error) {
+        test.isTrue(error);
+        test.isFalse(Meteor.user());
+      }));
+    },
+    // new password, success
+    function (test, expect) {
+      Meteor.loginWithPassword(email, password2, expect(function (error) {
+        test.equal(error, undefined);
+        test.equal(Meteor.user().username, username);
+      }));
+    },
+    // change w/ no old password.
+    function (test, expect) {
+      Meteor.changePassword(null, password3, expect(function (error) {
+        test.isTrue(error);
+      }));
+    },
+    // XXX test Meteor.accounts.config(unsafePasswordChanges)
+    //
+    // XXX test raw (non-srp) password setting. Need to send a method
+    // directly, there is no API for this. Test this once we have
+    // unsafePasswordChanges. Duplicating the password exchange code is
+    // gross.
+
     logoutStep
   ]);
 
