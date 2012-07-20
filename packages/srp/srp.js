@@ -10,8 +10,10 @@
    * Generate a new SRP verifier. Password is the plaintext password.
    *
    * options is optional and can include:
-   * - identity: String. The SRP username to user. Random UUID if not provided.
-   * - salt: String. A salt to use. Random if not provided. Mostly for testing.
+   * - identity: String. The SRP username to user. Mostly this is passed
+   *   in for testing.  Random UUID if not provided.
+   * - salt: String. A salt to use.  Mostly this is passed in for
+   *   testing.  Random UUID if not provided.
    * - SRP parameters (see _defaults and paramsFromOptions below)
    */
   Meteor._srp.generateVerifier = function (password, options) {
