@@ -8,7 +8,6 @@
 
     var verifier = Meteor._srp.generateVerifier(options.password, {identity: options.username});
 
-    // xcxc what if we don't pass an email? or don't pass username?
     Meteor.apply('createUser', [
       {username: options.username, email: options.email, srp: verifier}
     ], {wait: true}, function (error, result) {

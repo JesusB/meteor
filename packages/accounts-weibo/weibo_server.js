@@ -20,11 +20,14 @@
 
     return {
       options: {
-        services: {weibo: {id: result.uid, accessToken: result.accessToken}}
-      },
-      // xcxc should this be screenName? username? what is this?
-      // xcxc originally called "screen_name" - should we announce the breaking change?
-      extra: {screenName: identity.screen_name}
+        services: {
+          weibo: {
+            id: result.uid,
+            accessToken: result.accessToken,
+            screenName: identity.screen_name
+          }
+        }
+      }
     };
   });
 

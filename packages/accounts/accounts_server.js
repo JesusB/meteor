@@ -77,6 +77,8 @@
   /// MANAGING USER OBJECTS
   ///
 
+  // xcxc updateOrCreateUser also needs to call onCreatUserHook
+
   // Updates or creates a user after we authenticate with a 3rd party
   //
   // @param options {Object}
@@ -88,15 +90,13 @@
   Meteor.accounts.updateOrCreateUser = function(options, extra) {
     var updateUserData = function() {
       // don't overwrite existing fields
-      // xcxc do we need to guard writing to private fields? (services, private, username, email)
-      var newKeys = _.without(_.keys(userData), _.keys(user));
-      var newAttrs = _.pick(userData, newKeys);
+      var newKeys = _.without(_.keys(extra), _.keys(user));
+      var newAttrs = _.pick(extra, newKeys);
       Meteor.users.update(user, {$set: newAttrs});
     };
 
-    // xcxc rethink the need for all of these:
     var email = options.email;
-    var userData = extra || {};
+    extra = extra || {};
 
     if (_.keys(options.services).length > 0) {
       if (_.keys(options.services).length > 1) {
@@ -107,8 +107,8 @@
       var serviceUserId = options.services[serviceName].id;
       delete options.services[serviceName].id;
       var serviceData = options.services[serviceName];
+      // xcxc do we need all these or is there a better way to do this?
     }
-    // xcxc </rethink>
 
     // xcxc think about matching by username as well. read package
     // options?
@@ -150,7 +150,7 @@
         // Create a new user
         var attrs = {};
         attrs[serviceName] = _.extend({id: serviceUserId}, serviceData);
-        return Meteor.users.insert(_.extend({}, userData, {
+        return Meteor.users.insert(_.extend({}, extra, {
           emails: (email ? [email] : []),
           services: attrs
         }));

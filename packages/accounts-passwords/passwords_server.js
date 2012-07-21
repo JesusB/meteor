@@ -35,11 +35,6 @@
       onCreateUserHook = func;
   };
 
-
-  Meteor.accounts.onCreateUser = function (func) {
-    // xcxc
-  };
-
   Meteor.methods({
     // @param request {Object} with fields:
     //   user: either {username: (username)}, {email: (email)}, or {id: (userId)}
@@ -117,6 +112,7 @@
       if (serialized)
         ret.HAMK = serialized.HAMK;
       return ret;
+    },
 
     createUser: function (options, extra) {
       var username = options.username;
@@ -128,14 +124,21 @@
 
       // XXX validate verifier
 
-      // xcxc support just receiving password
-      // xcxc support email and no username, or both
-      // xcxc if email, email -> emails in object
-      var user = {username: username, services: {password: {srp: options.srp}}};
+      // raw password, should only be used over SSL!
+      if (options.password) {
+        if (options.srp)
+          throw new Meteor.Error(400, "Don't pass both password and srp in options");
+        options.srp = Meteor._srp.generateVerifier(
+          options.password, {identity: username});
+      }
 
+      var user = {services: {password: {srp: options.srp}}};
+      if (options.username)
+        user.username = options.username;
       if (options.email)
         user.emails = [options.email];
 
+      // xcxc get rid of fields: services, private, username, email
       if (onCreateUserHook) {
         user = onCreateUserHook(options, extra, user);
         // xcxc we need to get extra out of this, or alternative
@@ -143,12 +146,18 @@
         // user object
       }
 
-      var userId = Meteor.accounts.updateOrCreateUser(user, extra);
+      // xcxc copy over extra, without the special fields (see other xcxc referring to Meteor.accounts.guardedFields)
+
+      var userId = Meteor.users.insert(user);
+
       var loginToken = Meteor.accounts._loginTokens.insert({userId: userId});
       this.setUserId(userId);
       return {token: loginToken, id: userId};
     }
   });
+
+  // xcxc BIG: Meteor.accounts.config
+  // xcxc ~BIG: Meteor.accounts.validateNewUser
 
   // handler to login with password
   Meteor.accounts.registerLoginHandler(function (options) {
